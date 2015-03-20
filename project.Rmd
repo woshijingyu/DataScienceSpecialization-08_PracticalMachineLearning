@@ -67,7 +67,7 @@ confValidation <- confusionMatrix(validationData[,col], predValidation)
 
 The accuracy of the model on the training dataset is:  
 ```{r, warning=FALSE}
-train_accuracy <- confTrain$overall["Accuracy"]
+train_accuracy <- as.numeric(confTrain$overall["Accuracy"])
 ```
 
 The in sample error is:
@@ -78,7 +78,7 @@ in_sample_error
 
 The accuracy of the model on the validation dataset is: 
 ```{r, warning=FALSE}
-validation_accuracy <- confValidation$overall["Accuracy"]
+validation_accuracy <- as.numeric(confValidation$overall["Accuracy"])
 ```
 
 The out of sample error is expected at:
