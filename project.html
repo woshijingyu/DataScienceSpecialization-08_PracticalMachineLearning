@@ -114,17 +114,19 @@ predValidation &lt;- predict(modelFit, newValidationPC)
 
 confTrain &lt;- confusionMatrix(trainData[,col], predTrain)
 confValidation &lt;- confusionMatrix(validationData[,col], predValidation)</code></pre>
+<p>The accuracy of the model on the training dataset is:</p>
+<pre class="r"><code>train_accuracy &lt;- as.numeric(confTrain$overall[&quot;Accuracy&quot;])</code></pre>
 <p>The in sample error is:</p>
-<pre class="r"><code>in_sample_error &lt;- 1-confTrain$overall[&quot;Accuracy&quot;]
+<pre class="r"><code>in_sample_error &lt;- (1-train_accuracy)
 in_sample_error</code></pre>
-<pre><code>## Accuracy 
-##        0</code></pre>
+<pre><code>## [1] 0</code></pre>
+<p>The accuracy of the model on the validation dataset is:</p>
+<pre class="r"><code>validation_accuracy &lt;- as.numeric(confValidation$overall[&quot;Accuracy&quot;])</code></pre>
 <p>The out of sample error is expected at:</p>
-<pre class="r"><code>out_of_sample_error &lt;- 1-confValidation$overall[&quot;Accuracy&quot;]
+<pre class="r"><code>out_of_sample_error &lt;- (1-validation_accuracy)
 out_of_sample_error</code></pre>
-<pre><code>##   Accuracy 
-## 0.01852167</code></pre>
-<p>So we can see that the in sample error is lower than the expected out of sample error.</p>
+<pre><code>## [1] 0.01852167</code></pre>
+<p>So we can see that the in sample error is lower than the expected out of sample error, which is normal for prediction models.</p>
 <ol start="6" style="list-style-type: decimal">
 <li>Finally we use the model to predict the test data:</li>
 </ol>
@@ -132,6 +134,7 @@ out_of_sample_error</code></pre>
 predTest</code></pre>
 <pre><code>##  [1] B A A A A E D B A A B C B A E E A B B B
 ## Levels: A B C D E</code></pre>
+<p>From the submission results, our model got 19 out of 20 test cases correct, yielding a 95% accuracy on test data. So the real out of sample error is bigger than the expectation.</p>
 
 
 </div>
