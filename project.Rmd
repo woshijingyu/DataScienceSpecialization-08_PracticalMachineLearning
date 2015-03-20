@@ -1,0 +1,98 @@
+---
+title: "Course Project for Practical Machine Learning"
+output: html_document
+---
+This project reads in the training data from people who did the weight lifting excercise and try to predict if people are doing excercise correctly in the test data. 
+
+1. Load the training data. As we believe that information like the data index and the time of recording is not relevant to if people are doing actions correctly, we discard them. Additionally, there are a lot of features with mostly NA or blank values, we discard them as well. So we manually select the 54 features to use below. 
+```{r, warning=FALSE}
+rm(list=ls())
+library(caret)
+data <- read.csv('pml-training.csv')
+
+# select the non-NaN features
+colIndex <- c(7,8,9,10,11,37:49,60:68,84:86,102,113:124,140,151:160)
+data <- data[,colIndex]
+
+```
+
+2. For training the model and cross validation, we randomly split the data into 70% training and 30% validation data.  
+```{r, warning=FALSE}
+# split the training data into training and validation for cross validation
+set.seed(98123)
+inTrain <- createDataPartition(y=data$classe, p=0.7, list=FALSE)
+trainData <- data[inTrain,]
+validationData <- data[-inTrain,]
+
+dims <- dim(trainData)
+col <- dims[2]
+```
+
+
+3. Perform PCA to reduce the dimension of the training data and apply PCA model on 
+```{r, warning=FALSE}
+# do PCA to reduce the dimension
+preProc <- preProcess(trainData[,-col], method="pca",thresh=0.9)
+trainPC <- predict(preProc, trainData[,-col])
+validationPC <- predict(preProc, validationData[,-col])
+
+# add the class label to train and test data
+dims <- dim(trainPC)
+colPC <- dims[2]
+
+newTrainPC <- cbind(trainPC,trainData[,col])
+names(newTrainPC)[colPC+1] <- "classe"
+newValidationPC <- cbind(validationPC, validationData[,col])
+names(newValidationPC)[colPC+1] <- "classe"
+```
+
+4. Prepare the test data according the preprocess steps done for training data:
+
+```{r, warning=FALSE}
+# parepare test data according to training data
+testData <- read.csv('pml-testing.csv')
+testData <- testData[,colIndex]
+testPC <- predict(preProc, testData[,-col])
+```
+
+5. Train the model on training data and validate the model on validation data. 
+```{r, warning=FALSE}
+modelFit <- train(classe ~., data=newTrainPC, method="rf")
+predTrain <- predict(modelFit, newTrainPC)
+predValidation <- predict(modelFit, newValidationPC)
+
+confTrain <- confusionMatrix(trainData[,col], predTrain)
+confValidation <- confusionMatrix(validationData[,col], predValidation)
+```
+
+The accuracy of the model on the training dataset is:  
+```{r, warning=FALSE}
+train_accuracy <- confTrain$overall["Accuracy"]
+```
+
+The in sample error is:
+```{r, warning=FALSE}
+in_sample_error <- (1-train_accuracy)
+in_sample_error
+```
+
+The accuracy of the model on the validation dataset is: 
+```{r, warning=FALSE}
+validation_accuracy <- confValidation$overall["Accuracy"]
+```
+
+The out of sample error is expected at:
+```{r,warning=FALSE}
+out_of_sample_error <- (1-validation_accuracy)
+out_of_sample_error
+```
+
+So we can see that the in sample error is lower than the expected out of sample error, which is normal for prediction models. 
+
+6. Finally we use the model to predict the test data:
+```{r, warning=FALSE}
+predTest <- predict(modelFit, testPC)
+predTest
+```
+
+From the submission results, our model got 19 out of 20 test cases correct, yielding a 95% accuracy on test data. So the real out of sample error is bigger than the expectation. 
