@@ -4,7 +4,7 @@ output: html_document
 ---
 This project reads in the training data from people who did the weight lifting excercise and try to predict if people are doing excercise correctly in the test data. 
 
-1. Load the training data. As we believe that information like the data index and the time of recording is not relevant to if people are doing actions correctly, we discard them. Additionally, there are a lot of features with mostly NA or blank values, we discard them as well. So we manually select the 54 features to use below. 
+1. Load the training data. As we believe that information like the data index and the time of recording is not relevant to if people are doing actions correctly, we discard them. Additionally, there are a lot of features with mostly NA or blank values, we discard them as well. So we manually select the remaining 54 features which are non-NA to use below. 
 ```{r, warning=FALSE}
 rm(list=ls())
 library(caret)
@@ -16,13 +16,13 @@ data <- data[,colIndex]
 
 ```
 
-2. For training the model and cross validation, we randomly split the data into 70% training and 30% validation data.  
+2. For training the model and cross validation, we randomly split the data into 70% training and 30% test data.  
 ```{r, warning=FALSE}
-# split the training data into training and validation for cross validation
+# split the training data into training and test for cross validation
 set.seed(98123)
 inTrain <- createDataPartition(y=data$classe, p=0.7, list=FALSE)
 trainData <- data[inTrain,]
-validationData <- data[-inTrain,]
+testData <- data[-inTrain,]
 
 dims <- dim(trainData)
 col <- dims[2]
@@ -34,7 +34,7 @@ col <- dims[2]
 # do PCA to reduce the dimension
 preProc <- preProcess(trainData[,-col], method="pca",thresh=0.9)
 trainPC <- predict(preProc, trainData[,-col])
-validationPC <- predict(preProc, validationData[,-col])
+testPC <- predict(preProc, testData[,-col])
 
 # add the class label to train and test data
 dims <- dim(trainPC)
@@ -42,27 +42,27 @@ colPC <- dims[2]
 
 newTrainPC <- cbind(trainPC,trainData[,col])
 names(newTrainPC)[colPC+1] <- "classe"
-newValidationPC <- cbind(validationPC, validationData[,col])
-names(newValidationPC)[colPC+1] <- "classe"
+newTestPC <- cbind(testPC, testData[,col])
+names(newTestPC)[colPC+1] <- "classe"
 ```
 
-4. Prepare the test data according the preprocess steps done for training data:
+4. Prepare the test data according to the preprocess steps done for training data:
 
 ```{r, warning=FALSE}
-# parepare test data according to training data
-testData <- read.csv('pml-testing.csv')
-testData <- testData[,colIndex]
-testPC <- predict(preProc, testData[,-col])
+# parepare validation data according to training data
+validationData <- read.csv('pml-testing.csv')
+validationData <- validationData[,colIndex]
+validationPC <- predict(preProc, validationData[,-col])
 ```
 
-5. Train the model on training data and validate the model on validation data. 
+5. Train the model on training data and validate the model on test data. 
 ```{r, warning=FALSE}
 modelFit <- train(classe ~., data=newTrainPC, method="rf")
 predTrain <- predict(modelFit, newTrainPC)
-predValidation <- predict(modelFit, newValidationPC)
+predtest <- predict(modelFit, newTestPC)
 
 confTrain <- confusionMatrix(trainData[,col], predTrain)
-confValidation <- confusionMatrix(validationData[,col], predValidation)
+conftest <- confusionMatrix(testData[,col], predtest)
 ```
 
 The accuracy of the model on the training dataset is:  
@@ -76,23 +76,23 @@ in_sample_error <- (1-train_accuracy)
 in_sample_error
 ```
 
-The accuracy of the model on the validation dataset is: 
+The accuracy of the model on the test dataset is: 
 ```{r, warning=FALSE}
-validation_accuracy <- as.numeric(confValidation$overall["Accuracy"])
+test_accuracy <- as.numeric(conftest$overall["Accuracy"])
 ```
 
 The out of sample error is expected at:
 ```{r,warning=FALSE}
-out_of_sample_error <- (1-validation_accuracy)
+out_of_sample_error <- (1-test_accuracy)
 out_of_sample_error
 ```
 
 So we can see that the in sample error is lower than the expected out of sample error, which is normal for prediction models. 
 
-6. Finally we use the model to predict the test data:
+6. Finally we use the model to predict the testcases which is the validation data:
 ```{r, warning=FALSE}
-predTest <- predict(modelFit, testPC)
-predTest
+predValidation <- predict(modelFit, validationPC)
+predValidation
 ```
 
-From the submission results, our model got 19 out of 20 test cases correct, yielding a 95% accuracy on test data. So the real out of sample error is bigger than the expectation. 
+From the submission results, our model got 19 out of 20 test cases correct, yielding a 95% accuracy on validation data. So the real out of sample error is bigger than the expectation. 
